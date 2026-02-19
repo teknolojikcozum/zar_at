@@ -155,7 +155,7 @@
         /* Modals/Alerts */
         .toast {
             position: fixed;
-            top: 20px;
+            top: 60px;
             left: 50%;
             transform: translateX(-50%);
             background: #ef4444;
@@ -166,7 +166,7 @@
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s;
-            z-index: 50;
+            z-index: 100;
         }
         .toast.show { opacity: 1; }
 
@@ -201,6 +201,20 @@
     <div id="toast" class="toast">Lütfen önce bir oyuncu seçin veya ekleyin!</div>
 
     <!-- ÖZEL PENCERELER (MODALS) -->
+    <!-- Liderlik Kürsüsü Modalı -->
+    <div id="podium-modal" class="fixed inset-0 bg-slate-900/90 z-50 hidden flex items-end justify-center opacity-0 transition-opacity duration-500">
+        <div class="w-full max-w-2xl p-6 md:p-10 bg-slate-800 rounded-t-3xl border-t border-slate-700 shadow-2xl transform translate-y-full transition-transform duration-500 flex flex-col items-center" id="podium-content">
+            <h2 class="text-3xl font-bold text-center text-yellow-400 mb-2">OYUN BİTTİ!</h2>
+            <p class="text-slate-400 text-center mb-8 text-sm">Hedef puana ulaşıldı, işte kazananlar:</p>
+            
+            <div class="flex justify-center items-end gap-2 w-full h-48 md:h-56" id="podium-bars">
+                <!-- Javascript ile doldurulacak -->
+            </div>
+            
+            <button onclick="closePodium()" class="mt-8 w-full max-w-sm py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-slate-900 rounded-xl font-bold text-lg shadow-lg transform transition active:scale-95">Oyunu Sıfırla ve Yeniden Başla</button>
+        </div>
+    </div>
+
     <!-- Oyuncu Adı Değiştirme Penceresi -->
     <div id="rename-modal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
         <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="rename-modal-content">
@@ -262,7 +276,7 @@
                         <div class="dice-face face-1"><div class="dot"></div></div>
                         <div class="dice-face face-2"><div class="dot"></div><div class="dot"></div></div>
                         <div class="dice-face face-3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
-                        <div class="dice-face face-4"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
                         <div class="dice-face face-5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
                         <div class="dice-face face-6"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
                     </div>
@@ -279,8 +293,46 @@
                 <div class="w-48 h-4 bg-black/40 rounded-[100%] absolute -bottom-2 left-1/2 -translate-x-1/2 blur-md transition-all duration-300" id="dice-shadow"></div>
             </div>
 
-            <!-- ACTION CONTROLS -->
+            <!-- ACTION CONTROLS & BETTING -->
             <div class="flex flex-col items-center gap-4 w-full max-w-xs mt-auto">
+                
+                <!-- Bahis Modu Alanı (Sadece Yazı Turada Görünür) -->
+                <div id="betting-section" class="w-full bg-slate-900 border border-slate-700 rounded-xl p-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-xs font-bold text-slate-300">🔥 Bahis/Risk Modu</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="bet-toggle" class="sr-only peer">
+                            <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-500"></div>
+                        </label>
+                    </div>
+                    
+                    <div id="bet-controls" class="hidden flex-col gap-3 mt-3 pt-3 border-t border-slate-700">
+                        <div class="flex justify-between items-center text-[10px] sm:text-[11px] text-slate-400 bg-slate-800/50 p-2 rounded-lg">
+                            <span>Kasa: <strong id="bet-available-score" class="text-yellow-400 text-xs sm:text-sm">0</strong> Puan</span>
+                            <span>Kazan: <strong class="text-green-400">+100%</strong> | Kaybet: <strong class="text-red-400">-50%</strong></span>
+                        </div>
+                        <div class="flex gap-2">
+                            <label class="flex-1 text-center bg-slate-800 border border-slate-600 rounded-lg p-2 cursor-pointer hover:bg-slate-700 transition">
+                                <input type="radio" name="coin-prediction" value="yazi" class="hidden peer" checked>
+                                <span class="text-xs font-bold text-slate-400 peer-checked:text-yellow-400">Yazı</span>
+                            </label>
+                            <label class="flex-1 text-center bg-slate-800 border border-slate-600 rounded-lg p-2 cursor-pointer hover:bg-slate-700 transition">
+                                <input type="radio" name="coin-prediction" value="tura" class="hidden peer">
+                                <span class="text-xs font-bold text-slate-400 peer-checked:text-yellow-400">Tura</span>
+                            </label>
+                        </div>
+                        <div class="flex items-center gap-1.5">
+                            <div class="flex items-center gap-2 bg-slate-800 border border-slate-600 rounded-lg p-2 flex-1">
+                                <span class="text-xs font-bold text-slate-400 pl-1">Miktar:</span>
+                                <input type="number" id="bet-amount" min="1" value="1" class="flex-1 w-full bg-transparent text-sm text-yellow-400 font-bold outline-none text-right pr-1" oninput="this.value = Math.abs(this.value)">
+                            </div>
+                            <button id="btn-bet-min" class="bg-slate-800 border border-slate-600 hover:bg-slate-700 text-xs font-bold py-2 px-2.5 rounded-lg transition text-slate-300 shadow-sm" title="Minimum (1 Puan)">Min</button>
+                            <button id="btn-bet-half" class="bg-slate-800 border border-slate-600 hover:bg-slate-700 text-xs font-bold py-2 px-2.5 rounded-lg transition text-slate-300 shadow-sm" title="Yarısı">½</button>
+                            <button id="btn-bet-max" class="bg-slate-800 border border-slate-600 hover:bg-slate-700 text-xs font-bold py-2 px-2.5 rounded-lg transition text-slate-300 shadow-sm" title="Tümü">Max</button>
+                        </div>
+                    </div>
+                </div>
+
                 <button id="action-btn" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-slate-900 font-bold py-4 px-8 rounded-2xl shadow-lg transform transition active:scale-95 text-xl disabled:opacity-50 disabled:cursor-not-allowed">
                     PARA AT
                 </button>
@@ -289,7 +341,7 @@
                 </div>
 
                 <!-- Oyun Geçmişi (Log) -->
-                <div class="w-full mt-6 bg-slate-900 border border-slate-700 rounded-xl p-3 max-w-sm h-32 overflow-y-auto hidden md:block custom-scrollbar">
+                <div class="w-full mt-2 bg-slate-900 border border-slate-700 rounded-xl p-3 max-w-sm h-32 overflow-y-auto hidden md:block custom-scrollbar">
                     <h4 class="text-xs text-slate-400 font-bold mb-2 uppercase border-b border-slate-700 pb-1">Son Hareketler</h4>
                     <ul id="history-log" class="text-sm space-y-1 text-slate-300 flex flex-col-reverse">
                         <li class="text-slate-500 italic text-xs">Henüz bir hamle yapılmadı.</li>
@@ -370,6 +422,11 @@
 
     </div>
 
+    <!-- Footer / Uyarı Metni -->
+    <div class="w-full text-center mt-12 pb-4 text-slate-500 text-xs opacity-70">
+        Bu oyun tamamen eğlence amaçlı geliştirilmiştir. Herhangi bir gerçek maddi değeri veya geçerliliği yoktur.
+    </div>
+
     <script>
         // --- MULTIPLAYER LOGIC ---
         let players = [
@@ -379,6 +436,7 @@
         ];
         let activePlayerId = 1;
         let nextPlayerId = 3;
+        let highestDiceRoll = 0; // Rekor takibi için
 
         const playerInput = document.getElementById('new-player-name');
         const addPlayerBtn = document.getElementById('add-player-btn');
@@ -397,6 +455,16 @@
         const btnDoubleDice = document.getElementById('btn-double-dice');
         const dice2 = document.getElementById('dice2');
         
+        // Bahis Elementleri
+        const bettingSection = document.getElementById('betting-section');
+        const betToggle = document.getElementById('bet-toggle');
+        const betControls = document.getElementById('bet-controls');
+        const betAmountInput = document.getElementById('bet-amount');
+        const betAvailableScore = document.getElementById('bet-available-score');
+        const btnBetMin = document.getElementById('btn-bet-min');
+        const btnBetHalf = document.getElementById('btn-bet-half');
+        const btnBetMax = document.getElementById('btn-bet-max');
+        
         // Panel Tabs & Views
         const tabScoresPanel = document.getElementById('tab-scores-panel');
         const tabStatsPanel = document.getElementById('tab-stats-panel');
@@ -407,6 +475,7 @@
         // Değişkenler
         let isSoundMuted = false;
         let isDoubleDice = false;
+        let isBetMode = false;
         let gameWon = false;
         let targetScore = 50;
         let currentDice2RotationX = -20;
@@ -418,13 +487,16 @@
         const renameModalContent = document.getElementById('rename-modal-content');
         const deleteModal = document.getElementById('delete-modal');
         const deleteModalContent = document.getElementById('delete-modal-content');
+        const podiumModal = document.getElementById('podium-modal');
+        const podiumContent = document.getElementById('podium-content');
+        const podiumBars = document.getElementById('podium-bars');
         let actionPlayerId = null;
 
         function showToast(msg) {
             if(!toastEl) return;
-            toastEl.textContent = msg;
+            toastEl.innerHTML = msg; // innerHTML to support bold text etc.
             toastEl.classList.add('show');
-            setTimeout(() => toastEl.classList.remove('show'), 3000);
+            setTimeout(() => toastEl.classList.remove('show'), 3500);
         }
 
         // PANEL TABS EVENT LISTENERS
@@ -574,6 +646,18 @@
             if(viewStats && !viewStats.classList.contains('hidden')) {
                 renderStats();
             }
+
+            // Bahis panelindeki Kasa (Kullanılabilir Puan) bilgisini güncelle
+            if (betAvailableScore) {
+                const activePlayer = players.find(p => p.id === activePlayerId);
+                if (activePlayer) {
+                    betAvailableScore.textContent = activePlayer.score;
+                    // Eğer mevcut input kasadan büyükse inputu sınırla
+                    if (betAmountInput && parseInt(betAmountInput.value) > activePlayer.score) {
+                        betAmountInput.value = activePlayer.score > 0 ? activePlayer.score : 1;
+                    }
+                }
+            }
         }
 
         // Açılır Menü (Dropdown) Mantığı
@@ -669,6 +753,18 @@
             }
         }
 
+        // Kürsü (Podium) Kapatma Modalı
+        function closePodium() {
+            if(!podiumModal || !podiumContent) return;
+            podiumModal.classList.add('opacity-0');
+            podiumContent.classList.add('translate-y-full');
+            setTimeout(() => {
+                podiumModal.classList.add('hidden');
+                // Yeniden başlatmak için reset fonksiyonunu çağır
+                if(resetStatsBtn) resetStatsBtn.click();
+            }, 500);
+        }
+
         if(addPlayerBtn) {
             addPlayerBtn.addEventListener('click', () => {
                 if(!playerInput) return;
@@ -701,6 +797,7 @@
                 if(isAnimating) return;
                 // Skoru, parayı ve atılan zar sayısını (diceRolls) da sıfırlıyoruz.
                 players.forEach(p => { p.score = 0; p.yazi = 0; p.tura = 0; p.diceRolls = 0; });
+                highestDiceRoll = 0; // Rekoru da sıfırla
                 gameWon = false;
                 if(actionBtn) actionBtn.textContent = gameMode === 'coin' ? 'PARA AT' : 'ZAR AT';
                 if(historyLog) historyLog.innerHTML = '<li class="text-slate-500 italic text-xs">Oyun sıfırlandı.</li>';
@@ -721,6 +818,50 @@
                 else if(!isSoundMuted && audioCtx.state === 'suspended') audioCtx.resume();
             });
         }
+        
+        // Bahis Modu Toggle İşlevi
+        if(betToggle) {
+            betToggle.addEventListener('change', (e) => {
+                isBetMode = e.target.checked;
+                if(isBetMode) {
+                    const activePlayer = players.find(p => p.id === activePlayerId);
+                    if (activePlayer && activePlayer.score <= 0) {
+                        showToast("Bahis yapmak için önce zardan puan toplamalısınız!");
+                        e.target.checked = false;
+                        isBetMode = false;
+                        return;
+                    }
+                    betControls.classList.remove('hidden');
+                    betControls.classList.add('flex');
+                } else {
+                    betControls.classList.add('hidden');
+                    betControls.classList.remove('flex');
+                }
+            });
+        }
+
+        // Hızlı Bahis Butonları
+        if (btnBetMin) {
+            btnBetMin.addEventListener('click', () => {
+                if (betAmountInput) betAmountInput.value = 1;
+            });
+        }
+        if (btnBetHalf) {
+            btnBetHalf.addEventListener('click', () => {
+                const activePlayer = players.find(p => p.id === activePlayerId);
+                if (activePlayer && activePlayer.score > 0 && betAmountInput) {
+                    betAmountInput.value = Math.max(1, Math.floor(activePlayer.score / 2));
+                }
+            });
+        }
+        if (btnBetMax) {
+            btnBetMax.addEventListener('click', () => {
+                const activePlayer = players.find(p => p.id === activePlayerId);
+                if (activePlayer && activePlayer.score > 0 && betAmountInput) {
+                    betAmountInput.value = activePlayer.score;
+                }
+            });
+        }
 
         // Hedef Skor Güncelleme
         if(targetScoreInput) {
@@ -729,31 +870,105 @@
             });
         }
 
-        // Geçmişe Kayıt Ekleme
-        function addLog(playerName, action, resultText) {
+        // Gelişmiş Geçmişe Kayıt Ekleme (Saat ve Rekor Rozeti ile)
+        function addLog(playerName, action, resultText, rollValue = null) {
             if(!historyLog) return;
             if (historyLog.querySelector('li.italic')) {
                 historyLog.innerHTML = '';
             }
+            
+            const timeStr = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            let badgeHtml = '';
+            
+            // Eğer zarsa ve o ana kadarki en yüksek skorsa rekor rozeti ekle
+            if (rollValue !== null && rollValue > highestDiceRoll) {
+                highestDiceRoll = rollValue;
+                badgeHtml = '<span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30">👑 Rekor</span>';
+            }
+
             const li = document.createElement('li');
-            li.innerHTML = `<span class="text-yellow-400 font-semibold">${playerName}</span> ${action}: <strong class="text-white">${resultText}</strong>`;
+            li.innerHTML = `
+                <span class="text-[10px] text-slate-500 mr-1">[${timeStr}]</span>
+                <span class="text-yellow-400 font-semibold">${playerName}</span> 
+                ${action}: <strong class="text-white">${resultText}</strong>
+                ${badgeHtml}
+            `;
             historyLog.appendChild(li);
-            // Auto scroll to bottom (because it is flex-col-reverse)
             historyLog.scrollTop = 0; 
         }
 
-        // Oyun Kazanma Kontrolü (Sadece Zar puanına göre)
+        // Liderlik Kürsüsünü Göster (Podium)
+        function showPodium() {
+            if(!podiumModal || !podiumContent || !podiumBars) return;
+            
+            const sortedPlayers = [...players].sort((a,b) => b.score - a.score);
+            const p1 = sortedPlayers[0];
+            const p2 = sortedPlayers[1];
+            const p3 = sortedPlayers[2];
+
+            let html = '';
+            // 2. Sıra (Gümüş)
+            if(p2 && p2.score > 0) {
+                html += `
+                <div class="w-1/3 flex flex-col items-center animate-[slideUp_0.5s_ease-out_0.2s_both]">
+                    <span class="text-xs md:text-sm font-bold text-slate-300 truncate w-full text-center px-1">${p2.name}</span>
+                    <span class="text-[10px] md:text-xs text-slate-400 mb-1 font-semibold">${p2.score} Puan</span>
+                    <div class="w-full bg-gradient-to-b from-slate-300 to-slate-500 h-24 md:h-32 rounded-t-xl flex justify-center items-start pt-3 shadow-[0_0_15px_rgba(203,213,225,0.3)] border-t border-slate-200">
+                        <span class="font-black text-slate-800 text-3xl drop-shadow-md">2</span>
+                    </div>
+                </div>`;
+            } else {
+                html += `<div class="w-1/3"></div>`;
+            }
+            
+            // 1. Sıra (Altın)
+            if(p1) {
+                html += `
+                <div class="w-1/3 flex flex-col items-center animate-[slideUp_0.5s_ease-out_0s_both] z-10">
+                    <span class="text-xs md:text-sm font-bold text-yellow-400 truncate w-full text-center px-1">${p1.name}</span>
+                    <span class="text-[10px] md:text-xs text-yellow-500 mb-1 font-semibold">${p1.score} Puan</span>
+                    <div class="w-full bg-gradient-to-b from-yellow-300 to-yellow-600 h-32 md:h-44 rounded-t-xl flex justify-center items-start pt-3 shadow-[0_0_20px_rgba(253,224,71,0.5)] border-t border-yellow-200 relative">
+                        <span class="font-black text-yellow-900 text-4xl drop-shadow-md">1</span>
+                        <div class="absolute -top-6 text-3xl">👑</div>
+                    </div>
+                </div>`;
+            }
+            
+            // 3. Sıra (Bronz)
+            if(p3 && p3.score > 0) {
+                html += `
+                <div class="w-1/3 flex flex-col items-center animate-[slideUp_0.5s_ease-out_0.4s_both]">
+                    <span class="text-xs md:text-sm font-bold text-orange-400 truncate w-full text-center px-1">${p3.name}</span>
+                    <span class="text-[10px] md:text-xs text-orange-500 mb-1 font-semibold">${p3.score} Puan</span>
+                    <div class="w-full bg-gradient-to-b from-orange-400 to-orange-700 h-16 md:h-24 rounded-t-xl flex justify-center items-start pt-3 shadow-[0_0_15px_rgba(251,146,60,0.3)] border-t border-orange-300">
+                        <span class="font-black text-orange-900 text-2xl drop-shadow-md">3</span>
+                    </div>
+                </div>`;
+            } else {
+                html += `<div class="w-1/3"></div>`;
+            }
+
+            podiumBars.innerHTML = html;
+            
+            podiumModal.classList.remove('hidden');
+            setTimeout(() => {
+                podiumModal.classList.remove('opacity-0');
+                podiumContent.classList.remove('translate-y-full');
+            }, 50);
+        }
+
+        // Oyun Kazanma Kontrolü
         function checkWinCondition() {
             if (gameWon) return; 
             const winner = players.find(p => p.score >= targetScore);
             if (winner) {
                 gameWon = true;
-                showToast(`🎉 KAZANAN: ${winner.name.toUpperCase()} 🎉`);
-                // Konfeti Efekti
+                
+                // Konfeti Şöleni
                 if(typeof confetti === 'function') {
-                    const duration = 3 * 1000;
+                    const duration = 5 * 1000;
                     const animationEnd = Date.now() + duration;
-                    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+                    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 200 };
                     const interval = setInterval(function() {
                         const timeLeft = animationEnd - Date.now();
                         if (timeLeft <= 0) return clearInterval(interval);
@@ -761,9 +976,13 @@
                         confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
                     }, 250);
                 }
+                
                 if(actionBtn) {
-                    actionBtn.textContent = 'OYUN BİTTİ (Sıfırla)';
+                    actionBtn.textContent = 'OYUN BİTTİ';
                 }
+                
+                // Kısa bir süre sonra kürsüyü göster
+                setTimeout(showPodium, 1500);
             }
         }
 
@@ -839,7 +1058,6 @@
         function playDiceSound() {
             if (isSoundMuted) return;
             if (audioCtx.state === 'suspended') audioCtx.resume();
-            // Simulate rattling sound
             for(let i=0; i<5; i++) {
                 setTimeout(() => {
                     const osc = audioCtx.createOscillator();
@@ -867,6 +1085,7 @@
                 if(tabDice) tabDice.className = 'flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors text-slate-400 hover:text-white';
                 
                 if(coinWrapper) coinWrapper.classList.remove('hidden');
+                if(bettingSection) bettingSection.classList.remove('hidden'); // Bahis kısmı gelsin
                 if(diceWrapper) diceWrapper.classList.add('hidden');
                 if(diceOptions) diceOptions.classList.add('hidden');
                 
@@ -885,8 +1104,9 @@
                 if(tabCoin) tabCoin.className = 'flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors text-slate-400 hover:text-white';
                 
                 if(diceWrapper) diceWrapper.classList.remove('hidden');
-                if(coinWrapper) coinWrapper.classList.add('hidden');
                 if(diceOptions) diceOptions.classList.remove('hidden');
+                if(coinWrapper) coinWrapper.classList.add('hidden');
+                if(bettingSection) bettingSection.classList.add('hidden'); // Bahis kısmı gizlensin
                 
                 if(!gameWon && actionBtn) actionBtn.textContent = 'ZAR AT';
                 if(resultDisplay) resultDisplay.style.opacity = '0';
@@ -931,12 +1151,30 @@
                 return;
             }
 
+            const activePlayer = players.find(p => p.id === activePlayerId);
+            
+            // Bahis Modu Ön Kontrolleri
+            let currentBetAmount = 0;
+            let currentPrediction = '';
+            
+            if (gameMode === 'coin' && isBetMode) {
+                currentBetAmount = parseInt(betAmountInput.value) || 0;
+                currentPrediction = document.querySelector('input[name="coin-prediction"]:checked').value; // 'yazi' or 'tura'
+                
+                if(currentBetAmount < 1) {
+                    showToast("En az 1 puan yatırmalısınız!");
+                    return;
+                }
+                if(activePlayer.score < currentBetAmount) {
+                    showToast(`Yetersiz Kasa! Sadece ${activePlayer.score} puanınız var. Lütfen bahis miktarını düşürün.`);
+                    return;
+                }
+            }
+
             if (isAnimating) return;
             isAnimating = true;
             if(actionBtn) actionBtn.disabled = true;
             if(resultDisplay) resultDisplay.style.opacity = '0';
-
-            const activePlayer = players.find(p => p.id === activePlayerId);
 
             if (gameMode === 'coin') {
                 playCoinFlipSound();
@@ -945,15 +1183,15 @@
                 const isTura = Math.random() < 0.5; 
                 
                 const extraSpins = 5; 
-                const baseRotation = 1800; // 5 full spins
+                const baseRotation = 1800; 
                 let rotateAmount = baseRotation;
                 
                 if (isTura) {
-                    // TURA (Atatürk) is at 0 degrees
+                    // TURA (Atatürk)
                     const nextMultiple = Math.ceil(currentCoinRotation / 360) * 360;
                     rotateAmount = (nextMultiple - currentCoinRotation) + 1800;
                 } else {
-                    // YAZI (Köprü) is at 180 degrees
+                    // YAZI (Köprü)
                     const nextMultiple = Math.ceil(currentCoinRotation / 360) * 360;
                     rotateAmount = (nextMultiple - currentCoinRotation) + 1800 + 180;
                 }
@@ -971,20 +1209,41 @@
                     isAnimating = false;
                     if(actionBtn && !gameWon) actionBtn.disabled = false;
                     
+                    const resultText = isTura ? 'TURA' : 'YAZI';
+                    const resultValueForBet = isTura ? 'tura' : 'yazi';
+                    
+                    // Bahis Sonuçlandırma
+                    let betLogMessage = '';
+                    if(isBetMode) {
+                        if(currentPrediction === resultValueForBet) {
+                            // Kazandı
+                            activePlayer.score += currentBetAmount;
+                            showToast(`Tebrikler! ${currentBetAmount} Puan KAZANDINIZ! 📈`);
+                            betLogMessage = ` (+${currentBetAmount} Puan)`;
+                        } else {
+                            // Kaybetti
+                            const lostAmount = Math.ceil(currentBetAmount / 2);
+                            activePlayer.score -= lostAmount;
+                            showToast(`Maalesef! ${lostAmount} Puan KAYBETTİNİZ! 📉`);
+                            betLogMessage = ` (-${lostAmount} Puan)`;
+                        }
+                    }
+
                     if(resultDisplay) {
-                        const resultText = isTura ? 'TURA' : 'YAZI';
-                        resultDisplay.textContent = `${activePlayer.name.toUpperCase()} ATTI: ${resultText}`;
+                        resultDisplay.innerHTML = `${activePlayer.name.toUpperCase()} ATTI: ${resultText} <span class="text-sm block mt-1">${betLogMessage}</span>`;
                         resultDisplay.style.opacity = '1';
-                        resultDisplay.className = `h-8 text-xl font-bold text-center transition-opacity duration-500 ${isTura ? 'text-yellow-400' : 'text-slate-200'}`;
+                        resultDisplay.className = `h-10 text-xl font-bold text-center transition-opacity duration-500 ${isTura ? 'text-yellow-400' : 'text-slate-200'}`;
                     }
 
                     // Update Player Stats
                     if(isTura) activePlayer.tura++;
                     else activePlayer.yazi++;
                     
-                    addLog(activePlayer.name, 'para attı', isTura ? 'TURA' : 'YAZI');
+                    addLog(activePlayer.name, isBetMode ? `bahis oynadı (${currentPrediction.toUpperCase()})` : 'para attı', resultText + betLogMessage);
+                    
                     updateUI();
-                    passTurn();
+                    checkWinCondition();
+                    if(!gameWon) passTurn();
 
                     if(coinShadow) {
                         coinShadow.style.transform = 'translate(-50%) scale(1)';
@@ -1018,13 +1277,13 @@
                 let roll2 = {res: 0};
                 if(isDoubleDice) {
                     roll2 = getResultAndTarget();
-                    // Zarların görsel olarak karışması için ikinci zara farklı rotasyon sayısı verelim
                     currentDice2RotationX = Math.ceil(currentDice2RotationX / 360) * 360 + 1440 + roll2.tgtX; 
                     currentDice2RotationY = Math.ceil(currentDice2RotationY / 360) * 360 + 720 + roll2.tgtY;
                     if(dice2) dice2.style.transform = `rotateX(${currentDice2RotationX}deg) rotateY(${currentDice2RotationY}deg)`;
                 }
 
-                const totalResult = roll1.res + (isDoubleDice ? roll2.res : 0);
+                let totalResult = roll1.res + (isDoubleDice ? roll2.res : 0);
+                let isDuses = (isDoubleDice && roll1.res === 6 && roll2.res === 6);
                 
                 if(diceShadow) {
                     diceShadow.style.transform = 'translate(-50%) scale(0.6)';
@@ -1035,21 +1294,32 @@
                     playCoinLandSound(); // Thud sound
                     isAnimating = false;
                     
+                    // Düşeş Sürprizi
+                    let dusesLog = '';
+                    if(isDuses) {
+                        totalResult += 5; // Extra 5 points
+                        dusesLog = ' (DÜŞEŞ! +5 Puan)';
+                        showToast('<div class="text-xl">🎲 DÜŞEŞ! 🎲<br><span class="text-base font-normal">+5 Bonus Puan Kazandın!</span></div>');
+                        if(typeof confetti === 'function') {
+                            confetti({ particleCount: 150, spread: 100, origin: { y: 0.6 }, zIndex: 200, colors: ['#fbbf24', '#f87171', '#ffffff'] });
+                        }
+                    }
+
                     if(resultDisplay) {
-                        resultDisplay.textContent = `${activePlayer.name.toUpperCase()} ATTI: ${totalResult}`;
+                        resultDisplay.innerHTML = `${activePlayer.name.toUpperCase()} ATTI: ${totalResult} ${isDuses ? '🌟' : ''}`;
                         resultDisplay.style.opacity = '1';
-                        resultDisplay.className = `h-8 text-xl font-bold text-center transition-opacity duration-500 text-white`;
+                        resultDisplay.className = `h-8 text-xl font-bold text-center transition-opacity duration-500 ${isDuses ? 'text-yellow-400 animate-pulse' : 'text-white'}`;
                     }
 
                     // Update Player Stats
                     activePlayer.score += totalResult;
-                    activePlayer.diceRolls += (isDoubleDice ? 2 : 1); // Ortalama hesabı için atılan fiziksel zar sayısını ekler
+                    activePlayer.diceRolls += (isDoubleDice ? 2 : 1); 
                     
-                    addLog(activePlayer.name, isDoubleDice ? 'çift zar attı' : 'zar attı', totalResult);
+                    addLog(activePlayer.name, isDoubleDice ? 'çift zar attı' : 'zar attı', totalResult + dusesLog, totalResult);
                     
                     updateUI();
                     checkWinCondition();
-                    passTurn();
+                    if(!gameWon) passTurn();
                     
                     if(actionBtn && !gameWon) actionBtn.disabled = false;
 
@@ -1060,6 +1330,17 @@
                 }, 2000); // 2 seconds for dice
             }
         }
+        
+        // Yardımcı Animasyon CSS Eklemesi (Kürsü için)
+        const styleSheet = document.createElement("style");
+        styleSheet.innerText = `
+            @keyframes slideUp {
+                from { transform: translateY(20px); opacity: 0; }
+                to { transform: translateY(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(styleSheet);
+        
     </script>
 </body>
 </html>
