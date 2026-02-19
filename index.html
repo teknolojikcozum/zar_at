@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yazı Tura & Zar Oyunu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            perspective: 1200px;
+            overflow-x: hidden;
+        }
+
+        /* --- COIN STYLES --- */
+        .coin-container {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+        }
+
+        .coin-face {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            border-radius: 50%;
+            backface-visibility: hidden;
+            background-color: #d4af37;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.4), 0 10px 15px rgba(0,0,0,0.3);
+            border: 1px solid rgba(184, 134, 11, 0.5); 
+        }
+
+        /* TURA TARAFI (Köprü) */
+        .side-tura {
+            transform: rotateY(0deg) translateZ(3px);
+            z-index: 2;
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/c/cd/1TL_reverse.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* YAZI TARAFI (Atatürk) */
+        .side-yazi {
+            transform: rotateY(180deg) translateZ(3px);
+            background-image: url('https://upload.wikimedia.org/wikipedia/commons/6/64/1TL_obverse.png');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .coin-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%;
+            transform: translateZ(1px);
+            background: #d4af37;
+        }
+
+        .coin-container::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border-radius: 50%;
+            transform: translateZ(-1px);
+            background: linear-gradient(90deg, #b8860b 0%, #e6c65d 20%, #b8860b 40%, #e6c65d 60%, #b8860b 80%, #e6c65d 100%);
+            z-index: -1;
+        }
+
+        /* --- DICE STYLES --- */
+        .dice-container {
+            width: 100px;
+            height: 100px;
+            margin: 20px 10px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            cursor: pointer;
+            transform: rotateX(-20deg) rotateY(-20deg);
+        }
+
+        .dice-face {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: #f8fafc;
+            border: 2px solid #cbd5e1;
+            border-radius: 16px;
+            box-shadow: inset 0 0 15px rgba(0,0,0,0.1);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            padding: 10px;
+            gap: 4px;
+        }
+
+        .dot {
+            background-color: #1e293b;
+            border-radius: 50%;
+            width: 100%;
+            height: 100%;
+            box-shadow: inset 0 3px 5px rgba(0,0,0,0.4);
+            justify-self: center;
+            align-self: center;
+            max-width: 18px;
+            max-height: 18px;
+        }
+
+        /* Zar yüzlerinin 3D pozisyonları */
+        .face-1 { transform: rotateY(0deg) translateZ(50px); }
+        .face-2 { transform: rotateY(90deg) translateZ(50px); }
+        .face-3 { transform: rotateX(-90deg) translateZ(50px); }
+        .face-4 { transform: rotateX(90deg) translateZ(50px); }
+        .face-5 { transform: rotateY(-90deg) translateZ(50px); }
+        .face-6 { transform: rotateX(180deg) translateZ(50px); }
+
+        /* Zar Noktalarının Yerleşimi */
+        .face-1 .dot:nth-child(1) { grid-column: 2; grid-row: 2; }
+        
+        .face-2 .dot:nth-child(1) { grid-column: 3; grid-row: 1; }
+        .face-2 .dot:nth-child(2) { grid-column: 1; grid-row: 3; }
+        
+        .face-3 .dot:nth-child(1) { grid-column: 3; grid-row: 1; }
+        .face-3 .dot:nth-child(2) { grid-column: 2; grid-row: 2; }
+        .face-3 .dot:nth-child(3) { grid-column: 1; grid-row: 3; }
+        
+        .face-4 .dot:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .face-4 .dot:nth-child(2) { grid-column: 3; grid-row: 1; }
+        .face-4 .dot:nth-child(3) { grid-column: 1; grid-row: 3; }
+        .face-4 .dot:nth-child(4) { grid-column: 3; grid-row: 3; }
+        
+        .face-5 .dot:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .face-5 .dot:nth-child(2) { grid-column: 3; grid-row: 1; }
+        .face-5 .dot:nth-child(3) { grid-column: 2; grid-row: 2; }
+        .face-5 .dot:nth-child(4) { grid-column: 1; grid-row: 3; }
+        .face-5 .dot:nth-child(5) { grid-column: 3; grid-row: 3; }
+        
+        .face-6 .dot:nth-child(1) { grid-column: 1; grid-row: 1; }
+        .face-6 .dot:nth-child(2) { grid-column: 1; grid-row: 2; }
+        .face-6 .dot:nth-child(3) { grid-column: 1; grid-row: 3; }
+        .face-6 .dot:nth-child(4) { grid-column: 3; grid-row: 1; }
+        .face-6 .dot:nth-child(5) { grid-column: 3; grid-row: 2; }
+        .face-6 .dot:nth-child(6) { grid-column: 3; grid-row: 3; }
+
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        
+        /* Modals/Alerts */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+            z-index: 50;
+        }
+        .toast.show { opacity: 1; }
+
+    </style>
+</head>
+<body class="bg-slate-900 text-white min-h-screen flex flex-col pt-12 p-4 relative">
+
+    <!-- YouTube Banner -->
+    <div id="yt-banner" class="absolute top-0 left-0 w-full bg-gradient-to-r from-red-600 to-red-800 text-white text-xs md:text-sm font-medium py-2 px-4 flex justify-between items-center z-50 shadow-lg">
+        <div class="flex-1 hidden md:block"></div>
+        <div class="flex-[3] text-center">
+            Daha fazla içerik için <a href="https://www.youtube.com/@teknolojikcozumvideo" target="_blank" class="font-bold underline hover:text-red-200 transition">Teknolojik Çözüm</a> YouTube kanalımı ziyaret edebilirsiniz! 🚀
+        </div>
+        <div class="flex-1 flex justify-end">
+            <button onclick="document.getElementById('yt-banner').remove()" class="hover:text-red-200 transition p-1 rounded-full hover:bg-red-700 focus:outline-none" title="Kapat">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Ses Aç/Kapat Butonu -->
+    <button id="sound-toggle" class="absolute top-12 md:top-14 right-4 bg-slate-800 p-3 rounded-full border border-slate-700 hover:bg-slate-700 transition text-xl shadow-lg z-10" title="Sesi Aç/Kapat">
+        🔊
+    </button>
+
+    <!-- Header -->
+    <div class="text-center mb-8 mt-6">
+        <h1 class="text-4xl md:text-5xl font-bold text-yellow-400 mb-2 drop-shadow-lg">Şans Oyunları</h1>
+        <p class="text-slate-400 text-sm md:text-base">Zar atın veya parayı havaya fırlatın!</p>
+    </div>
+
+    <div id="toast" class="toast">Lütfen önce bir oyuncu seçin veya ekleyin!</div>
+
+    <!-- ÖZEL PENCERELER (MODALS) -->
+    <!-- Oyuncu Adı Değiştirme Penceresi -->
+    <div id="rename-modal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="rename-modal-content">
+            <h3 class="text-xl font-bold mb-4 text-white">Oyuncu Adı Değiştir</h3>
+            <input type="text" id="rename-input" class="w-full bg-slate-900 border border-slate-600 text-white rounded-lg px-4 py-3 mb-6 focus:outline-none focus:border-yellow-500 transition">
+            <div class="flex justify-end gap-3">
+                <button onclick="closeRenameModal()" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition">İptal</button>
+                <button onclick="submitRename()" class="px-5 py-2.5 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold rounded-xl transition">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Oyuncu Silme Onay Penceresi -->
+    <div id="delete-modal" class="fixed inset-0 bg-slate-900/80 z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-300">
+        <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700 w-full max-w-sm shadow-2xl transform scale-95 transition-transform duration-300" id="delete-modal-content">
+            <h3 class="text-xl font-bold mb-2 text-white">Oyuncuyu Sil</h3>
+            <p class="text-slate-400 mb-6 text-sm">Bu oyuncuyu ve tüm skorlarını silmek istediğinize emin misiniz? Bu işlem geri alınamaz.</p>
+            <div class="flex justify-end gap-3">
+                <button onclick="closeDeleteModal()" class="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-xl transition">İptal</button>
+                <button onclick="submitDelete()" class="px-5 py-2.5 bg-red-500 hover:bg-red-400 text-white font-bold rounded-xl transition">Evet, Sil</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Grid -->
+    <div class="max-w-6xl w-full mx-auto flex flex-col lg:flex-row gap-8">
+        
+        <!-- LEFT: GAME AREA -->
+        <div class="flex-1 bg-slate-800 border border-slate-700 p-6 rounded-3xl shadow-xl flex flex-col items-center">
+            
+            <!-- Game Toggle -->
+            <div class="flex flex-col items-center gap-3 mb-8 w-full max-w-sm">
+                <div class="flex bg-slate-900 rounded-xl p-1 w-full">
+                    <button id="tab-coin" class="flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors bg-slate-700 text-yellow-400 shadow">🪙 Yazı Tura</button>
+                    <button id="tab-dice" class="flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors text-slate-400 hover:text-white">🎲 Zar At</button>
+                </div>
+                
+                <!-- Çift Zar Seçeneği -->
+                <div id="dice-options" class="hidden flex bg-slate-900 rounded-lg p-1 w-3/4">
+                    <button id="btn-single-dice" class="flex-1 py-2 px-3 rounded text-xs font-bold transition-colors bg-slate-700 text-yellow-400 shadow">Tek Zar</button>
+                    <button id="btn-double-dice" class="flex-1 py-2 px-3 rounded text-xs font-bold transition-colors text-slate-400 hover:text-white">Çift Zar</button>
+                </div>
+            </div>
+
+            <!-- COIN WRAPPER -->
+            <div id="coin-wrapper" class="relative w-full flex flex-col items-center mb-8">
+                <div id="coin" class="coin-container">
+                    <div class="coin-face side-tura"></div>
+                    <div class="coin-face side-yazi"></div>
+                </div>
+                <div class="w-32 h-4 bg-black/40 rounded-[100%] absolute -bottom-10 left-1/2 -translate-x-1/2 blur-md transition-all duration-300" id="coin-shadow"></div>
+            </div>
+
+            <!-- DICE WRAPPER (Hidden by default) -->
+            <div id="dice-wrapper" class="relative w-full flex flex-col items-center justify-center mb-8 hidden">
+                <div class="flex flex-row gap-4 items-center justify-center">
+                    <!-- Dice 1 -->
+                    <div id="dice" class="dice-container">
+                        <div class="dice-face face-1"><div class="dot"></div></div>
+                        <div class="dice-face face-2"><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-4"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-6"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                    </div>
+                    <!-- Dice 2 (Hidden by default) -->
+                    <div id="dice2" class="dice-container hidden">
+                        <div class="dice-face face-1"><div class="dot"></div></div>
+                        <div class="dice-face face-2"><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-3"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-4"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-5"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                        <div class="dice-face face-6"><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
+                    </div>
+                </div>
+                <div class="w-48 h-4 bg-black/40 rounded-[100%] absolute -bottom-2 left-1/2 -translate-x-1/2 blur-md transition-all duration-300" id="dice-shadow"></div>
+            </div>
+
+            <!-- ACTION CONTROLS -->
+            <div class="flex flex-col items-center gap-4 w-full max-w-xs mt-auto">
+                <button id="action-btn" class="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-slate-900 font-bold py-4 px-8 rounded-2xl shadow-lg transform transition active:scale-95 text-xl disabled:opacity-50 disabled:cursor-not-allowed">
+                    PARA AT
+                </button>
+                <div id="result-display" class="h-8 text-xl font-semibold text-center text-yellow-300 opacity-0 transition-opacity duration-500">
+                    Sonuç bekleniyor...
+                </div>
+
+                <!-- Oyun Geçmişi (Log) -->
+                <div class="w-full mt-6 bg-slate-900 border border-slate-700 rounded-xl p-3 max-w-sm h-32 overflow-y-auto hidden md:block custom-scrollbar">
+                    <h4 class="text-xs text-slate-400 font-bold mb-2 uppercase border-b border-slate-700 pb-1">Son Hareketler</h4>
+                    <ul id="history-log" class="text-sm space-y-1 text-slate-300 flex flex-col-reverse">
+                        <li class="text-slate-500 italic text-xs">Henüz bir hamle yapılmadı.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: MULTIPLAYER, SCOREBOARD & STATS -->
+        <div class="w-full lg:w-96 bg-slate-800 border border-slate-700 p-6 rounded-3xl shadow-xl flex flex-col gap-6 relative h-auto lg:h-[700px]">
+            
+            <!-- PANEL TABS -->
+            <div class="flex bg-slate-900 rounded-xl p-1 w-full shrink-0">
+                <button id="tab-scores-panel" class="flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-colors bg-slate-700 text-yellow-400 shadow">👥 Skorlar</button>
+                <button id="tab-stats-panel" class="flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-colors text-slate-400 hover:text-white">📊 İstatistikler</button>
+            </div>
+
+            <!-- SCORES VIEW (Default) -->
+            <div id="view-scores" class="flex flex-col gap-6 flex-1 h-full">
+                <div class="flex justify-between items-center border-b border-slate-600 pb-2 shrink-0">
+                    <h2 class="text-xl font-bold text-white">Oyuncular</h2>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-slate-400 uppercase font-bold" title="Ulaşan kazanır">Hedef:</label>
+                        <input type="number" id="target-score-input" value="50" class="w-16 bg-slate-900 border border-slate-600 text-white text-sm rounded px-2 py-1 focus:outline-none focus:border-yellow-500 transition text-center">
+                    </div>
+                </div>
+
+                <!-- Add Player -->
+                <div class="flex gap-2 shrink-0">
+                    <input type="text" id="new-player-name" placeholder="Yeni oyuncu adı..." class="flex-1 bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-4 py-2 focus:outline-none focus:border-yellow-500 transition">
+                    <button id="add-player-btn" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition text-sm">Ekle</button>
+                </div>
+
+                <!-- Select Active Player -->
+                <div class="shrink-0">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-slate-400 text-xs uppercase font-bold">Hamle Sahibi</label>
+                        <label class="flex items-center gap-1 cursor-pointer" title="Sıra otomatik olarak sonraki oyuncuya geçer">
+                            <input type="checkbox" id="auto-turn-toggle" class="form-checkbox text-yellow-500 rounded bg-slate-900 border-slate-600" checked>
+                            <span class="text-xs text-slate-300">Oto Sıra</span>
+                        </label>
+                    </div>
+                    <select id="active-player-select" class="w-full bg-slate-900 border border-slate-600 text-white text-sm rounded-lg px-4 py-3 focus:outline-none focus:border-yellow-500 transition cursor-pointer appearance-none">
+                        <!-- Options populated via JS -->
+                    </select>
+                </div>
+
+                <!-- Score Table -->
+                <div class="flex-1 overflow-y-auto mt-2 border border-slate-700 rounded-xl bg-slate-900/50 custom-scrollbar">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0 z-10">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">Oyuncu</th>
+                                <th scope="col" class="px-2 py-3 text-center">Zar Puanı</th>
+                                <th scope="col" class="px-2 py-3 text-center">Yazı</th>
+                                <th scope="col" class="px-2 py-3 text-center">Tura</th>
+                            </tr>
+                        </thead>
+                        <tbody id="score-table-body" class="divide-y divide-slate-800">
+                            <!-- Rows populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Reset Stats -->
+                <button id="reset-stats-btn" class="w-full mt-2 text-xs text-slate-500 hover:text-white transition shrink-0">Tüm Skorları Sıfırla</button>
+            </div>
+
+            <!-- STATS VIEW (Hidden initially) -->
+            <div id="view-stats" class="flex-col gap-4 flex-1 hidden overflow-y-auto pr-2 custom-scrollbar">
+                <h2 class="text-lg font-bold text-white border-b border-slate-600 pb-2 mb-2 sticky top-0 bg-slate-800 z-10 shadow-sm">Detaylı Oyuncu Analizi</h2>
+                <div id="stats-container" class="flex flex-col gap-4">
+                    <!-- Stats cards will be populated here via JS -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        // --- MULTIPLAYER LOGIC ---
+        let players = [
+            // diceRolls: atılan toplam zar sayısını temsil eder (ortalama hesaplamak için)
+            { id: 1, name: 'Oyuncu 1', score: 0, yazi: 0, tura: 0, diceRolls: 0 },
+            { id: 2, name: 'Oyuncu 2', score: 0, yazi: 0, tura: 0, diceRolls: 0 }
+        ];
+        let activePlayerId = 1;
+        let nextPlayerId = 3;
+
+        const playerInput = document.getElementById('new-player-name');
+        const addPlayerBtn = document.getElementById('add-player-btn');
+        const activePlayerSelect = document.getElementById('active-player-select');
+        const scoreTableBody = document.getElementById('score-table-body');
+        const resetStatsBtn = document.getElementById('reset-stats-btn');
+        const toastEl = document.getElementById('toast');
+
+        // Yeni Eklenen Elementler
+        const targetScoreInput = document.getElementById('target-score-input');
+        const autoTurnToggle = document.getElementById('auto-turn-toggle');
+        const historyLog = document.getElementById('history-log');
+        const soundToggle = document.getElementById('sound-toggle');
+        const diceOptions = document.getElementById('dice-options');
+        const btnSingleDice = document.getElementById('btn-single-dice');
+        const btnDoubleDice = document.getElementById('btn-double-dice');
+        const dice2 = document.getElementById('dice2');
+        
+        // Panel Tabs & Views
+        const tabScoresPanel = document.getElementById('tab-scores-panel');
+        const tabStatsPanel = document.getElementById('tab-stats-panel');
+        const viewScores = document.getElementById('view-scores');
+        const viewStats = document.getElementById('view-stats');
+        const statsContainer = document.getElementById('stats-container');
+
+        // Değişkenler
+        let isSoundMuted = false;
+        let isDoubleDice = false;
+        let gameWon = false;
+        let targetScore = 50;
+        let currentDice2RotationX = -20;
+        let currentDice2RotationY = -20;
+
+        // Modal Elementleri
+        const renameModal = document.getElementById('rename-modal');
+        const renameInput = document.getElementById('rename-input');
+        const renameModalContent = document.getElementById('rename-modal-content');
+        const deleteModal = document.getElementById('delete-modal');
+        const deleteModalContent = document.getElementById('delete-modal-content');
+        let actionPlayerId = null;
+
+        function showToast(msg) {
+            if(!toastEl) return;
+            toastEl.textContent = msg;
+            toastEl.classList.add('show');
+            setTimeout(() => toastEl.classList.remove('show'), 3000);
+        }
+
+        // PANEL TABS EVENT LISTENERS
+        if(tabScoresPanel) {
+            tabScoresPanel.addEventListener('click', () => {
+                tabScoresPanel.className = 'flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-colors bg-slate-700 text-yellow-400 shadow';
+                if(tabStatsPanel) tabStatsPanel.className = 'flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-colors text-slate-400 hover:text-white';
+                
+                if(viewScores) { viewScores.classList.remove('hidden'); viewScores.classList.add('flex'); }
+                if(viewStats) { viewStats.classList.add('hidden'); viewStats.classList.remove('flex'); }
+            });
+        }
+
+        if(tabStatsPanel) {
+            tabStatsPanel.addEventListener('click', () => {
+                tabStatsPanel.className = 'flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-colors bg-slate-700 text-yellow-400 shadow';
+                if(tabScoresPanel) tabScoresPanel.className = 'flex-1 py-2 px-4 rounded-lg font-bold text-sm transition-colors text-slate-400 hover:text-white';
+                
+                if(viewStats) { viewStats.classList.remove('hidden'); viewStats.classList.add('flex'); }
+                if(viewScores) { viewScores.classList.add('hidden'); viewScores.classList.remove('flex'); }
+                
+                renderStats(); // Update stats whenever the tab is opened
+            });
+        }
+
+        function renderStats() {
+            if(!statsContainer) return;
+            statsContainer.innerHTML = '';
+            
+            if(players.length === 0) {
+                statsContainer.innerHTML = '<p class="text-slate-500 text-sm italic text-center mt-4">Henüz oyuncu yok.</p>';
+                return;
+            }
+
+            players.forEach(p => {
+                const totalCoin = p.yazi + p.tura;
+                const yaziPerc = totalCoin > 0 ? Math.round((p.yazi / totalCoin) * 100) : 0;
+                const turaPerc = totalCoin > 0 ? Math.round((p.tura / totalCoin) * 100) : 0;
+                const avgDice = p.diceRolls > 0 ? (p.score / p.diceRolls).toFixed(1) : 0;
+
+                const card = document.createElement('div');
+                card.className = 'bg-slate-900 p-4 rounded-xl border border-slate-700 relative overflow-hidden';
+                
+                // Card UI
+                card.innerHTML = `
+                    <h3 class="font-bold text-yellow-400 mb-4 flex items-center gap-2">
+                        <span class="w-2.5 h-2.5 rounded-full ${p.id === activePlayerId ? 'bg-green-500 animate-pulse' : 'bg-slate-500'}"></span>
+                        ${p.name}
+                    </h3>
+                    
+                    <div class="space-y-4">
+                        <!-- Para İstatistikleri -->
+                        <div>
+                            <div class="flex justify-between text-xs text-slate-400 mb-1.5 font-semibold">
+                                <span>🪙 Yazı/Tura Dağılımı (${totalCoin} Atış)</span>
+                            </div>
+                            <div class="w-full h-5 bg-slate-800 rounded-full flex overflow-hidden border border-slate-700 shadow-inner">
+                                <div class="bg-blue-500 h-full flex items-center justify-center text-[10px] font-bold text-white transition-all duration-500" style="width: ${yaziPerc}%" title="Yazı: ${p.yazi}">
+                                    ${yaziPerc > 10 ? '%'+yaziPerc + ' Y' : ''}
+                                </div>
+                                <div class="bg-red-500 h-full flex items-center justify-center text-[10px] font-bold text-white transition-all duration-500" style="width: ${turaPerc}%" title="Tura: ${p.tura}">
+                                    ${turaPerc > 10 ? '%'+turaPerc + ' T' : ''}
+                                </div>
+                            </div>
+                            <div class="flex justify-between text-[11px] mt-1.5 text-slate-500 font-medium">
+                                <span class="text-blue-400">Yazı: ${p.yazi}</span>
+                                <span class="text-red-400">Tura: ${p.tura}</span>
+                            </div>
+                        </div>
+
+                        <!-- Zar İstatistikleri -->
+                        <div class="grid grid-cols-2 gap-3 mt-2 pt-3 border-t border-slate-800">
+                            <div class="bg-slate-800/80 rounded-lg p-2.5 text-center border border-slate-700/50">
+                                <div class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Atılan Zar Sayısı</div>
+                                <div class="text-lg font-bold text-white">${p.diceRolls}</div>
+                            </div>
+                            <div class="bg-slate-800/80 rounded-lg p-2.5 text-center border border-slate-700/50">
+                                <div class="text-[10px] text-slate-400 uppercase font-semibold mb-1">Zar Ortalaması</div>
+                                <div class="text-lg font-bold text-yellow-400">${avgDice}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                statsContainer.appendChild(card);
+            });
+        }
+
+
+        function updateUI() {
+            if(activePlayerSelect) {
+                activePlayerSelect.innerHTML = '';
+                if (players.length === 0) {
+                    activePlayerSelect.innerHTML = '<option value="">(Oyuncu Yok)</option>';
+                } else {
+                    players.forEach(p => {
+                        const opt = document.createElement('option');
+                        opt.value = p.id;
+                        opt.textContent = p.name;
+                        if (p.id === activePlayerId) opt.selected = true;
+                        activePlayerSelect.appendChild(opt);
+                    });
+                }
+            }
+
+            if(scoreTableBody) {
+                scoreTableBody.innerHTML = '';
+                // Sort players by Dice Score descending
+                const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+                
+                if (sortedPlayers.length === 0) {
+                    scoreTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-4 text-slate-500">Henüz oyuncu yok</td></tr>`;
+                } else {
+                    sortedPlayers.forEach(p => {
+                        const isPlaying = p.id === activePlayerId;
+                        const row = document.createElement('tr');
+                        row.className = isPlaying ? 'bg-slate-800/80 text-white font-medium hover:bg-slate-800 transition' : 'text-slate-300 hover:bg-slate-800/50 transition';
+                        row.innerHTML = `
+                            <td class="px-4 py-3 flex items-center justify-between gap-2 relative">
+                                <div class="flex items-center gap-2 overflow-hidden">
+                                    ${isPlaying ? '<span class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse flex-shrink-0"></span>' : ''}
+                                    <span class="truncate max-w-[100px]" title="${p.name}">${p.name}</span>
+                                </div>
+                                <div class="relative">
+                                    <button onclick="toggleMenu(${p.id}, event)" class="text-slate-500 hover:text-white p-1 rounded transition hover:bg-slate-700 focus:outline-none">
+                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+                                    </button>
+                                    <div id="menu-${p.id}" class="player-menu hidden absolute right-0 top-full mt-1 w-36 bg-slate-700 border border-slate-600 rounded-lg shadow-xl z-50 overflow-hidden divide-y divide-slate-600">
+                                        <button onclick="openRenameModal(${p.id})" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-slate-200 hover:bg-slate-600 transition flex items-center gap-2">
+                                            ✏️ Adı Değiştir
+                                        </button>
+                                        <button onclick="confirmDelete(${p.id})" class="w-full text-left px-4 py-2.5 text-xs font-semibold text-red-400 hover:bg-slate-600 hover:text-red-300 transition flex items-center gap-2">
+                                            🗑️ Sil
+                                        </button>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-2 py-3 text-center text-yellow-400 font-bold">${p.score}</td>
+                            <td class="px-2 py-3 text-center">${p.yazi}</td>
+                            <td class="px-2 py-3 text-center">${p.tura}</td>
+                        `;
+                        scoreTableBody.appendChild(row);
+                    });
+                }
+            }
+
+            // İstatistikler sekmesi açıksa, değerleri canlı olarak da güncelle
+            if(viewStats && !viewStats.classList.contains('hidden')) {
+                renderStats();
+            }
+        }
+
+        // Açılır Menü (Dropdown) Mantığı
+        function toggleMenu(id, event) {
+            event.stopPropagation();
+            document.querySelectorAll('.player-menu').forEach(menu => {
+                if(menu.id !== `menu-${id}`) menu.classList.add('hidden');
+            });
+            const menu = document.getElementById(`menu-${id}`);
+            if(menu) menu.classList.toggle('hidden');
+        }
+
+        // Dışarı tıklanınca menüleri kapat
+        document.addEventListener('click', () => {
+            document.querySelectorAll('.player-menu').forEach(menu => menu.classList.add('hidden'));
+        });
+
+        // --- MODAL FONKSİYONLARI ---
+
+        // Ad Değiştirme Modalı
+        function openRenameModal(id) {
+            actionPlayerId = id;
+            const player = players.find(p => p.id === id);
+            if(!renameInput || !renameModal || !renameModalContent || !player) return;
+            
+            renameInput.value = player.name;
+            renameModal.classList.remove('hidden');
+            setTimeout(() => {
+                renameModal.classList.remove('opacity-0');
+                renameModalContent.classList.remove('scale-95');
+            }, 10);
+            renameInput.focus();
+        }
+
+        function closeRenameModal() {
+            if(!renameModal || !renameModalContent) return;
+            renameModal.classList.add('opacity-0');
+            renameModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                renameModal.classList.add('hidden');
+                actionPlayerId = null;
+            }, 300);
+        }
+
+        function submitRename() {
+            if(!renameInput) return;
+            const newName = renameInput.value.trim();
+            if(newName && actionPlayerId) {
+                const player = players.find(p => p.id === actionPlayerId);
+                if(player) player.name = newName;
+                updateUI();
+                closeRenameModal();
+                showToast('Oyuncu adı güncellendi.');
+            }
+        }
+
+        if(renameInput) {
+            renameInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') submitRename();
+            });
+        }
+
+        // Silme Onay Modalı
+        function confirmDelete(id) {
+            if(!deleteModal || !deleteModalContent) return;
+            actionPlayerId = id;
+            deleteModal.classList.remove('hidden');
+            setTimeout(() => {
+                deleteModal.classList.remove('opacity-0');
+                deleteModalContent.classList.remove('scale-95');
+            }, 10);
+        }
+
+        function closeDeleteModal() {
+            if(!deleteModal || !deleteModalContent) return;
+            deleteModal.classList.add('opacity-0');
+            deleteModalContent.classList.add('scale-95');
+            setTimeout(() => {
+                deleteModal.classList.add('hidden');
+                actionPlayerId = null;
+            }, 300);
+        }
+
+        function submitDelete() {
+            if(actionPlayerId) {
+                players = players.filter(p => p.id !== actionPlayerId);
+                if(activePlayerId === actionPlayerId) {
+                    activePlayerId = players.length > 0 ? players[0].id : null;
+                }
+                updateUI();
+                closeDeleteModal();
+                showToast('Oyuncu silindi.');
+            }
+        }
+
+        if(addPlayerBtn) {
+            addPlayerBtn.addEventListener('click', () => {
+                if(!playerInput) return;
+                const name = playerInput.value.trim();
+                if (name) {
+                    const newPlayer = { id: nextPlayerId++, name: name, score: 0, yazi: 0, tura: 0, diceRolls: 0 };
+                    players.push(newPlayer);
+                    activePlayerId = newPlayer.id; 
+                    playerInput.value = '';
+                    updateUI();
+                }
+            });
+        }
+
+        if(playerInput) {
+            playerInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') addPlayerBtn?.click();
+            });
+        }
+
+        if(activePlayerSelect) {
+            activePlayerSelect.addEventListener('change', (e) => {
+                activePlayerId = parseInt(e.target.value);
+                updateUI();
+            });
+        }
+
+        if(resetStatsBtn) {
+            resetStatsBtn.addEventListener('click', () => {
+                if(isAnimating) return;
+                // Skoru, parayı ve atılan zar sayısını (diceRolls) da sıfırlıyoruz.
+                players.forEach(p => { p.score = 0; p.yazi = 0; p.tura = 0; p.diceRolls = 0; });
+                gameWon = false;
+                if(actionBtn) actionBtn.textContent = gameMode === 'coin' ? 'PARA AT' : 'ZAR AT';
+                if(historyLog) historyLog.innerHTML = '<li class="text-slate-500 italic text-xs">Oyun sıfırlandı.</li>';
+                updateUI();
+                if(resultDisplay) resultDisplay.style.opacity = '0';
+            });
+        }
+
+        // Initialize UI
+        updateUI();
+
+        // Ses Açma/Kapama İşlevi
+        if(soundToggle) {
+            soundToggle.addEventListener('click', () => {
+                isSoundMuted = !isSoundMuted;
+                soundToggle.textContent = isSoundMuted ? '🔇' : '🔊';
+                if(isSoundMuted && audioCtx.state === 'running') audioCtx.suspend();
+                else if(!isSoundMuted && audioCtx.state === 'suspended') audioCtx.resume();
+            });
+        }
+
+        // Hedef Skor Güncelleme
+        if(targetScoreInput) {
+            targetScoreInput.addEventListener('change', (e) => {
+                targetScore = parseInt(e.target.value) || 50;
+            });
+        }
+
+        // Geçmişe Kayıt Ekleme
+        function addLog(playerName, action, resultText) {
+            if(!historyLog) return;
+            if (historyLog.querySelector('li.italic')) {
+                historyLog.innerHTML = '';
+            }
+            const li = document.createElement('li');
+            li.innerHTML = `<span class="text-yellow-400 font-semibold">${playerName}</span> ${action}: <strong class="text-white">${resultText}</strong>`;
+            historyLog.appendChild(li);
+            // Auto scroll to bottom (because it is flex-col-reverse)
+            historyLog.scrollTop = 0; 
+        }
+
+        // Oyun Kazanma Kontrolü (Sadece Zar puanına göre)
+        function checkWinCondition() {
+            if (gameWon) return; 
+            const winner = players.find(p => p.score >= targetScore);
+            if (winner) {
+                gameWon = true;
+                showToast(`🎉 KAZANAN: ${winner.name.toUpperCase()} 🎉`);
+                // Konfeti Efekti
+                if(typeof confetti === 'function') {
+                    const duration = 3 * 1000;
+                    const animationEnd = Date.now() + duration;
+                    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100 };
+                    const interval = setInterval(function() {
+                        const timeLeft = animationEnd - Date.now();
+                        if (timeLeft <= 0) return clearInterval(interval);
+                        const particleCount = 50 * (timeLeft / duration);
+                        confetti(Object.assign({}, defaults, { particleCount, origin: { x: Math.random(), y: Math.random() - 0.2 } }));
+                    }, 250);
+                }
+                if(actionBtn) {
+                    actionBtn.textContent = 'OYUN BİTTİ (Sıfırla)';
+                }
+            }
+        }
+
+        // Sonraki Oyuncuya Otomatik Geçiş
+        function passTurn() {
+            if(autoTurnToggle?.checked && !gameWon && players.length > 1) {
+                const currentIndex = players.findIndex(p => p.id === activePlayerId);
+                if(currentIndex !== -1) {
+                    const nextIndex = (currentIndex + 1) % players.length;
+                    activePlayerId = players[nextIndex].id;
+                    updateUI();
+                }
+            }
+        }
+
+        // --- GAME LOGIC ---
+        let gameMode = 'coin'; // 'coin' or 'dice'
+        let isAnimating = false;
+        
+        // Coin State
+        let currentCoinRotation = 0;
+        
+        // Dice State
+        let currentDiceRotationX = -20;
+        let currentDiceRotationY = -20;
+
+        // Elements
+        const tabCoin = document.getElementById('tab-coin');
+        const tabDice = document.getElementById('tab-dice');
+        const coinWrapper = document.getElementById('coin-wrapper');
+        const diceWrapper = document.getElementById('dice-wrapper');
+        const actionBtn = document.getElementById('action-btn');
+        const resultDisplay = document.getElementById('result-display');
+        
+        const coin = document.getElementById('coin');
+        const coinShadow = document.getElementById('coin-shadow');
+        const dice = document.getElementById('dice');
+        const diceShadow = document.getElementById('dice-shadow');
+
+        // Sounds
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        function playCoinFlipSound() {
+            if (isSoundMuted) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.5);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        function playCoinLandSound() {
+            if (isSoundMuted) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playDiceSound() {
+            if (isSoundMuted) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            // Simulate rattling sound
+            for(let i=0; i<5; i++) {
+                setTimeout(() => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(300 + Math.random()*200, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.05);
+                }, i * 150);
+            }
+        }
+
+        // TABS
+        if(tabCoin) {
+            tabCoin.addEventListener('click', () => {
+                if(isAnimating) return;
+                gameMode = 'coin';
+                
+                // UI Toggle
+                tabCoin.className = 'flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors bg-slate-700 text-yellow-400 shadow';
+                if(tabDice) tabDice.className = 'flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors text-slate-400 hover:text-white';
+                
+                if(coinWrapper) coinWrapper.classList.remove('hidden');
+                if(diceWrapper) diceWrapper.classList.add('hidden');
+                if(diceOptions) diceOptions.classList.add('hidden');
+                
+                if(!gameWon && actionBtn) actionBtn.textContent = 'PARA AT';
+                if(resultDisplay) resultDisplay.style.opacity = '0';
+            });
+        }
+
+        if(tabDice) {
+            tabDice.addEventListener('click', () => {
+                if(isAnimating) return;
+                gameMode = 'dice';
+                
+                // UI Toggle
+                tabDice.className = 'flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors bg-slate-700 text-yellow-400 shadow';
+                if(tabCoin) tabCoin.className = 'flex-1 py-3 px-4 rounded-lg font-bold text-sm transition-colors text-slate-400 hover:text-white';
+                
+                if(diceWrapper) diceWrapper.classList.remove('hidden');
+                if(coinWrapper) coinWrapper.classList.add('hidden');
+                if(diceOptions) diceOptions.classList.remove('hidden');
+                
+                if(!gameWon && actionBtn) actionBtn.textContent = 'ZAR AT';
+                if(resultDisplay) resultDisplay.style.opacity = '0';
+            });
+        }
+
+        // Çift / Tek Zar Seçenekleri Eventleri
+        if(btnSingleDice) {
+            btnSingleDice.addEventListener('click', () => {
+                if(isAnimating) return;
+                isDoubleDice = false;
+                btnSingleDice.className = 'flex-1 py-2 px-3 rounded text-xs font-bold transition-colors bg-slate-700 text-yellow-400 shadow';
+                if(btnDoubleDice) btnDoubleDice.className = 'flex-1 py-2 px-3 rounded text-xs font-bold transition-colors text-slate-400 hover:text-white';
+                if(dice2) dice2.classList.add('hidden');
+            });
+        }
+
+        if(btnDoubleDice) {
+            btnDoubleDice.addEventListener('click', () => {
+                if(isAnimating) return;
+                isDoubleDice = true;
+                btnDoubleDice.className = 'flex-1 py-2 px-3 rounded text-xs font-bold transition-colors bg-slate-700 text-yellow-400 shadow';
+                if(btnSingleDice) btnSingleDice.className = 'flex-1 py-2 px-3 rounded text-xs font-bold transition-colors text-slate-400 hover:text-white';
+                if(dice2) dice2.classList.remove('hidden');
+            });
+        }
+
+        // ACTION
+        if(actionBtn) actionBtn.addEventListener('click', handleAction);
+        if(coin) coin.addEventListener('click', () => { if(!isAnimating && gameMode==='coin') handleAction(); });
+        if(dice) dice.addEventListener('click', () => { if(!isAnimating && gameMode==='dice') handleAction(); });
+        if(dice2) dice2.addEventListener('click', () => { if(!isAnimating && gameMode==='dice') handleAction(); });
+
+        function handleAction() {
+            if (players.length === 0 || !activePlayerId) {
+                showToast("Lütfen önce bir oyuncu seçin veya ekleyin!");
+                return;
+            }
+
+            if (gameWon) {
+                showToast("Oyun bitti! Lütfen skorları sıfırlayın.");
+                return;
+            }
+
+            if (isAnimating) return;
+            isAnimating = true;
+            if(actionBtn) actionBtn.disabled = true;
+            if(resultDisplay) resultDisplay.style.opacity = '0';
+
+            const activePlayer = players.find(p => p.id === activePlayerId);
+
+            if (gameMode === 'coin') {
+                playCoinFlipSound();
+                
+                // Random: 0 = Tura(Atatürk), 1 = Yazı(Köprü/50)
+                const isTura = Math.random() < 0.5; 
+                
+                const extraSpins = 5; 
+                const baseRotation = 1800; // 5 full spins
+                let rotateAmount = baseRotation;
+                
+                if (isTura) {
+                    // TURA (Atatürk) is at 0 degrees
+                    const nextMultiple = Math.ceil(currentCoinRotation / 360) * 360;
+                    rotateAmount = (nextMultiple - currentCoinRotation) + 1800;
+                } else {
+                    // YAZI (Köprü) is at 180 degrees
+                    const nextMultiple = Math.ceil(currentCoinRotation / 360) * 360;
+                    rotateAmount = (nextMultiple - currentCoinRotation) + 1800 + 180;
+                }
+
+                currentCoinRotation += rotateAmount;
+                if(coin) coin.style.transform = `rotateY(${currentCoinRotation}deg)`;
+                
+                if(coinShadow) {
+                    coinShadow.style.transform = 'translate(-50%) scale(0.5)';
+                    coinShadow.style.opacity = '0.2';
+                }
+
+                setTimeout(() => {
+                    playCoinLandSound();
+                    isAnimating = false;
+                    if(actionBtn && !gameWon) actionBtn.disabled = false;
+                    
+                    if(resultDisplay) {
+                        const resultText = isTura ? 'TURA' : 'YAZI';
+                        resultDisplay.textContent = `${activePlayer.name.toUpperCase()} ATTI: ${resultText}`;
+                        resultDisplay.style.opacity = '1';
+                        resultDisplay.className = `h-8 text-xl font-bold text-center transition-opacity duration-500 ${isTura ? 'text-yellow-400' : 'text-slate-200'}`;
+                    }
+
+                    // Update Player Stats
+                    if(isTura) activePlayer.tura++;
+                    else activePlayer.yazi++;
+                    
+                    addLog(activePlayer.name, 'para attı', isTura ? 'TURA' : 'YAZI');
+                    updateUI();
+                    passTurn();
+
+                    if(coinShadow) {
+                        coinShadow.style.transform = 'translate(-50%) scale(1)';
+                        coinShadow.style.opacity = '1';
+                    }
+                }, 3000);
+
+            } else {
+                // DICE MODE
+                playDiceSound();
+                
+                const getResultAndTarget = () => {
+                    const res = Math.floor(Math.random() * 6) + 1;
+                    let tgtX = 0, tgtY = 0;
+                    switch(res) {
+                        case 1: tgtX = 0; tgtY = 0; break;
+                        case 2: tgtX = 0; tgtY = -90; break;
+                        case 3: tgtX = 90; tgtY = 0; break;
+                        case 4: tgtX = -90; tgtY = 0; break;
+                        case 5: tgtX = 0; tgtY = 90; break;
+                        case 6: tgtX = -180; tgtY = 0; break;
+                    }
+                    return {res, tgtX, tgtY};
+                };
+
+                const roll1 = getResultAndTarget();
+                currentDiceRotationX = Math.ceil(currentDiceRotationX / 360) * 360 + 1080 + roll1.tgtX;
+                currentDiceRotationY = Math.ceil(currentDiceRotationY / 360) * 360 + 1080 + roll1.tgtY;
+                if(dice) dice.style.transform = `rotateX(${currentDiceRotationX}deg) rotateY(${currentDiceRotationY}deg)`;
+
+                let roll2 = {res: 0};
+                if(isDoubleDice) {
+                    roll2 = getResultAndTarget();
+                    // Zarların görsel olarak karışması için ikinci zara farklı rotasyon sayısı verelim
+                    currentDice2RotationX = Math.ceil(currentDice2RotationX / 360) * 360 + 1440 + roll2.tgtX; 
+                    currentDice2RotationY = Math.ceil(currentDice2RotationY / 360) * 360 + 720 + roll2.tgtY;
+                    if(dice2) dice2.style.transform = `rotateX(${currentDice2RotationX}deg) rotateY(${currentDice2RotationY}deg)`;
+                }
+
+                const totalResult = roll1.res + (isDoubleDice ? roll2.res : 0);
+                
+                if(diceShadow) {
+                    diceShadow.style.transform = 'translate(-50%) scale(0.6)';
+                    diceShadow.style.opacity = '0.3';
+                }
+
+                setTimeout(() => {
+                    playCoinLandSound(); // Thud sound
+                    isAnimating = false;
+                    
+                    if(resultDisplay) {
+                        resultDisplay.textContent = `${activePlayer.name.toUpperCase()} ATTI: ${totalResult}`;
+                        resultDisplay.style.opacity = '1';
+                        resultDisplay.className = `h-8 text-xl font-bold text-center transition-opacity duration-500 text-white`;
+                    }
+
+                    // Update Player Stats
+                    activePlayer.score += totalResult;
+                    activePlayer.diceRolls += (isDoubleDice ? 2 : 1); // Ortalama hesabı için atılan fiziksel zar sayısını ekler
+                    
+                    addLog(activePlayer.name, isDoubleDice ? 'çift zar attı' : 'zar attı', totalResult);
+                    
+                    updateUI();
+                    checkWinCondition();
+                    passTurn();
+                    
+                    if(actionBtn && !gameWon) actionBtn.disabled = false;
+
+                    if(diceShadow) {
+                        diceShadow.style.transform = 'translate(-50%) scale(1)';
+                        diceShadow.style.opacity = '1';
+                    }
+                }, 2000); // 2 seconds for dice
+            }
+        }
+    </script>
+</body>
+</html>
