@@ -203,7 +203,12 @@
     <!-- ÖZEL PENCERELER (MODALS) -->
     <!-- Liderlik Kürsüsü Modalı -->
     <div id="podium-modal" class="fixed inset-0 bg-slate-900/90 z-50 hidden flex items-end justify-center opacity-0 transition-opacity duration-500">
-        <div class="w-full max-w-2xl p-6 md:p-10 bg-slate-800 rounded-t-3xl border-t border-slate-700 shadow-2xl transform translate-y-full transition-transform duration-500 flex flex-col items-center" id="podium-content">
+        <div class="w-full max-w-2xl p-6 md:p-10 bg-slate-800 rounded-t-3xl border-t border-slate-700 shadow-2xl transform translate-y-full transition-transform duration-500 flex flex-col items-center relative" id="podium-content">
+            
+            <button onclick="closePodium(false)" class="absolute top-4 right-4 text-slate-400 hover:text-white transition focus:outline-none p-2" title="Kapat">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+
             <h2 class="text-3xl font-bold text-center text-yellow-400 mb-2">OYUN BİTTİ!</h2>
             <p class="text-slate-400 text-center mb-8 text-sm">Hedef puana ulaşıldı, işte kazananlar:</p>
             
@@ -211,7 +216,10 @@
                 <!-- Javascript ile doldurulacak -->
             </div>
             
-            <button onclick="closePodium()" class="mt-8 w-full max-w-sm py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-slate-900 rounded-xl font-bold text-lg shadow-lg transform transition active:scale-95">Oyunu Sıfırla ve Yeniden Başla</button>
+            <div class="flex w-full max-w-md gap-3 mt-8">
+                <button onclick="goToStatsFromPodium()" class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-xl font-bold text-sm md:text-base shadow-lg transform transition active:scale-95">İstatistikleri Gör</button>
+                <button onclick="closePodium(true)" class="flex-[2] py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 text-slate-900 rounded-xl font-bold text-sm md:text-base shadow-lg transform transition active:scale-95">Yeniden Başla</button>
+            </div>
         </div>
     </div>
 
@@ -395,6 +403,8 @@
                         <thead class="text-xs text-slate-400 uppercase bg-slate-900 sticky top-0 z-10">
                             <tr>
                                 <th scope="col" class="px-4 py-3">Oyuncu</th>
+                                <th scope="col" class="px-2 py-3 text-center" title="Madeni Para Atış Sayısı">Para Atışı</th>
+                                <th scope="col" class="px-2 py-3 text-center" title="Zar Atış Sayısı">Zar Atışı</th>
                                 <th scope="col" class="px-2 py-3 text-center">Zar Puanı</th>
                                 <th scope="col" class="px-2 py-3 text-center">Yazı</th>
                                 <th scope="col" class="px-2 py-3 text-center">Tura</th>
@@ -431,8 +441,8 @@
         // --- MULTIPLAYER LOGIC ---
         let players = [
             // diceRolls: atılan toplam zar sayısını temsil eder (ortalama hesaplamak için)
-            { id: 1, name: 'Oyuncu 1', score: 0, yazi: 0, tura: 0, diceRolls: 0 },
-            { id: 2, name: 'Oyuncu 2', score: 0, yazi: 0, tura: 0, diceRolls: 0 }
+            { id: 1, name: 'Oyuncu 1', score: 0, yazi: 0, tura: 0, diceRolls: 0, coinThrows: 0, diceThrows: 0 },
+            { id: 2, name: 'Oyuncu 2', score: 0, yazi: 0, tura: 0, diceRolls: 0, coinThrows: 0, diceThrows: 0 }
         ];
         let activePlayerId = 1;
         let nextPlayerId = 3;
@@ -633,6 +643,8 @@
                                     </div>
                                 </div>
                             </td>
+                            <td class="px-2 py-3 text-center font-semibold text-slate-300">${p.coinThrows}</td>
+                            <td class="px-2 py-3 text-center font-semibold text-slate-300">${p.diceThrows}</td>
                             <td class="px-2 py-3 text-center text-yellow-400 font-bold">${p.score}</td>
                             <td class="px-2 py-3 text-center">${p.yazi}</td>
                             <td class="px-2 py-3 text-center">${p.tura}</td>
@@ -754,15 +766,20 @@
         }
 
         // Kürsü (Podium) Kapatma Modalı
-        function closePodium() {
+        function closePodium(reset = true) {
             if(!podiumModal || !podiumContent) return;
             podiumModal.classList.add('opacity-0');
             podiumContent.classList.add('translate-y-full');
             setTimeout(() => {
                 podiumModal.classList.add('hidden');
                 // Yeniden başlatmak için reset fonksiyonunu çağır
-                if(resetStatsBtn) resetStatsBtn.click();
+                if(reset && resetStatsBtn) resetStatsBtn.click();
             }, 500);
+        }
+
+        function goToStatsFromPodium() {
+            closePodium(false); // Sadece kapat, sıfırlama
+            if(tabStatsPanel) tabStatsPanel.click(); // İstatistik sekmesine geç
         }
 
         if(addPlayerBtn) {
@@ -770,7 +787,7 @@
                 if(!playerInput) return;
                 const name = playerInput.value.trim();
                 if (name) {
-                    const newPlayer = { id: nextPlayerId++, name: name, score: 0, yazi: 0, tura: 0, diceRolls: 0 };
+                    const newPlayer = { id: nextPlayerId++, name: name, score: 0, yazi: 0, tura: 0, diceRolls: 0, coinThrows: 0, diceThrows: 0 };
                     players.push(newPlayer);
                     activePlayerId = newPlayer.id; 
                     playerInput.value = '';
@@ -796,7 +813,7 @@
             resetStatsBtn.addEventListener('click', () => {
                 if(isAnimating) return;
                 // Skoru, parayı ve atılan zar sayısını (diceRolls) da sıfırlıyoruz.
-                players.forEach(p => { p.score = 0; p.yazi = 0; p.tura = 0; p.diceRolls = 0; });
+                players.forEach(p => { p.score = 0; p.yazi = 0; p.tura = 0; p.diceRolls = 0; p.coinThrows = 0; p.diceThrows = 0; });
                 highestDiceRoll = 0; // Rekoru da sıfırla
                 gameWon = false;
                 if(actionBtn) actionBtn.textContent = gameMode === 'coin' ? 'PARA AT' : 'ZAR AT';
@@ -1239,6 +1256,8 @@
                     if(isTura) activePlayer.tura++;
                     else activePlayer.yazi++;
                     
+                    activePlayer.coinThrows++; // Para atış sayısını artır
+                    
                     addLog(activePlayer.name, isBetMode ? `bahis oynadı (${currentPrediction.toUpperCase()})` : 'para attı', resultText + betLogMessage);
                     
                     updateUI();
@@ -1314,6 +1333,8 @@
                     // Update Player Stats
                     activePlayer.score += totalResult;
                     activePlayer.diceRolls += (isDoubleDice ? 2 : 1); 
+                    
+                    activePlayer.diceThrows++; // Zar atış sayısını artır
                     
                     addLog(activePlayer.name, isDoubleDice ? 'çift zar attı' : 'zar attı', totalResult + dusesLog, totalResult);
                     
